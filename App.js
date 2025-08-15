@@ -11,27 +11,17 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Sample video and subtitle URLs (replace with actual URLs from Google Drive)
+  // TODO: Replace with actual Google Drive video URL
+  // Get direct download link from Google Drive sharing
   const videoSource = {
     uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+    // Replace with: 'https://drive.google.com/uc?export=download&id=YOUR_VIDEO_FILE_ID'
   };
   
-  // Sample .ass subtitle content (replace with actual .ass file content)
-  const sampleAssSubtitle = `[Script Info]
-Title: Sample Subtitles
-ScriptType: v4.00+
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,20,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,0,2,10,10,10,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:01.00,0:00:05.00,Default,,0,0,0,,Welcome to the video player demo!
-Dialogue: 0,0:00:06.00,0:00:10.00,Default,,0,0,0,,This player supports .ass subtitles with full styling.
-Dialogue: 0,0:00:11.00,0:00:15.00,Default,,0,0,0,,Subtitles remain in sync during seeking and playback.
-Dialogue: 0,0:00:16.00,0:00:20.00,Default,,0,0,0,,{\\b1}Bold text{\\b0} and {\\i1}italic text{\\i0} are supported.
-Dialogue: 0,0:00:21.00,0:00:25.00,Default,,0,0,0,,{\\c&H00FF00&}Colored text{\\c} and {\\fs30}different sizes{\\fs} work too!`;
+  // TODO: Replace with actual .ass subtitle file URL
+  // Get direct download link from Google Drive sharing
+  const subtitleSource = 'https://raw.githubusercontent.com/1234-ad/react-native-ass-video-player/main/assets/sample-subtitles.ass';
+  // Replace with: 'https://drive.google.com/uc?export=download&id=YOUR_SUBTITLE_FILE_ID'
 
   const handleVideoLoad = (status) => {
     console.log('Video loaded:', status);
@@ -82,7 +72,7 @@ Dialogue: 0,0:00:21.00,0:00:25.00,Default,,0,0,0,,{\\c&H00FF00&}Colored text{\\c
       <View style={styles.videoContainer}>
         <VideoPlayer
           videoSource={videoSource}
-          subtitleSource={sampleAssSubtitle}
+          subtitleSource={subtitleSource}
           style={[styles.videoPlayer, getResponsiveStyle()]}
           onLoad={handleVideoLoad}
           onError={handleVideoError}
@@ -102,13 +92,23 @@ Dialogue: 0,0:00:21.00,0:00:25.00,Default,,0,0,0,,{\\c&H00FF00&}Colored text{\\c
       </View>
 
       <View style={styles.features}>
-        <Text style={styles.featuresTitle}>Features:</Text>
+        <Text style={styles.featuresTitle}>Features Demonstrated:</Text>
         <Text style={styles.featureItem}>✓ Full .ass subtitle format support</Text>
         <Text style={styles.featureItem}>✓ Styling preservation (colors, fonts, effects)</Text>
         <Text style={styles.featureItem}>✓ Precise timing and positioning</Text>
         <Text style={styles.featureItem}>✓ Seek synchronization</Text>
         <Text style={styles.featureItem}>✓ Cross-platform (Web, iOS, Android)</Text>
         <Text style={styles.featureItem}>✓ Responsive design</Text>
+        <Text style={styles.featureItem}>✓ Override codes support</Text>
+        <Text style={styles.featureItem}>✓ Multiple subtitle layers</Text>
+      </View>
+
+      <View style={styles.instructions}>
+        <Text style={styles.instructionsTitle}>Setup Instructions:</Text>
+        <Text style={styles.instructionItem}>1. Replace video URL with Google Drive link</Text>
+        <Text style={styles.instructionItem}>2. Replace subtitle URL with .ass file link</Text>
+        <Text style={styles.instructionItem}>3. Run: npm install && npm start</Text>
+        <Text style={styles.instructionItem}>4. Test on Web, iOS, and Android</Text>
       </View>
     </View>
   );
@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: Platform.OS === 'web' ? 20 : 50,
+    paddingHorizontal: 10,
   },
   header: {
     alignItems: 'center',
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
   features: {
     paddingHorizontal: 20,
     maxWidth: 400,
+    marginBottom: 20,
   },
   featuresTitle: {
     fontSize: 18,
@@ -198,5 +200,24 @@ const styles = StyleSheet.create({
     color: '#cccccc',
     marginBottom: 5,
     paddingLeft: 10,
+  },
+  instructions: {
+    paddingHorizontal: 20,
+    maxWidth: 400,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 15,
+  },
+  instructionsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffaa00',
+    marginBottom: 10,
+  },
+  instructionItem: {
+    fontSize: 13,
+    color: '#cccccc',
+    marginBottom: 5,
+    paddingLeft: 5,
   },
 });
