@@ -1,19 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Video } from 'expo-av';
+import { DirectASSRenderer } from './DirectASSRenderer';
+import { NativeVideoPlayer } from './NativeVideoPlayer';
 import { ASSParser } from '../utils/assParser';
 import { SubtitleRenderer } from './SubtitleRenderer';
 
 /**
- * VideoPlayer Component
- * Main video player with .ass subtitle support
+ * Enhanced VideoPlayer Component
+ * Supports multiple .ass rendering methods:
+ * 1. Direct WebView rendering (recommended)
+ * 2. Native video player with built-in subtitle support
+ * 3. Fallback to manual parsing (legacy)
  */
 export const VideoPlayer = ({ 
   videoSource, 
   subtitleSource, 
   style,
   onLoad,
-  onError 
+  onError,
+  renderingMethod = 'direct' // 'direct', 'native', 'parsed'
 }) => {
   const [videoStatus, setVideoStatus] = useState({});
   const [subtitleData, setSubtitleData] = useState(null);
@@ -25,26 +31,26 @@ export const VideoPlayer = ({
   const assParser = useRef(new ASSParser());
   const updateInterval = useRef(null);
 
-  // Load and parse subtitle file
+  // Load and parse subtitle file (for parsed method)
   useEffect(() => {
-    if (subtitleSource) {
+    if (subtitleSource && renderingMethod === 'parsed') {
       loadSubtitles();
     }
-  }, [subtitleSource]);
+  }, [subtitleSource, renderingMethod]);
 
-  // Update active subtitles based on video time
+  // Update active subtitles based on video time (for parsed method)
   useEffect(() => {
-    if (videoStatus.isLoaded && subtitleData) {
+    if (videoStatus.isLoaded && subtitleData && renderingMethod === 'parsed') {
       updateActiveSubtitles();
     }
-  }, [videoStatus.positionMillis, subtitleData]);
+  }, [videoStatus.positionMillis, subtitleData, renderingMethod]);
 
-  // Setup subtitle update interval
+  // Setup subtitle update interval (for parsed method)
   useEffect(() => {
-    if (videoStatus.isLoaded && videoStatus.isPlaying && subtitleData) {
+    if (videoStatus.isLoaded && videoStatus.isPlaying && subtitleData && renderingMethod === 'parsed') {
       updateInterval.current = setInterval(() => {
         updateActiveSubtitles();
-      }, 100); // Update every 100ms for smooth subtitle transitions
+      }, 100);
     } else {
       if (updateInterval.current) {
         clearInterval(updateInterval.current);
@@ -57,25 +63,23 @@ export const VideoPlayer = ({
         clearInterval(updateInterval.current);
       }
     };
-  }, [videoStatus.isPlaying, subtitleData]);
+  }, [videoStatus.isPlaying, subtitleData, renderingMethod]);
 
   const loadSubtitles = async () => {
     try {
       let subtitleContent;
       
       if (typeof subtitleSource === 'string') {
-        // URL or local file path
         const response = await fetch(subtitleSource);
         subtitleContent = await response.text();
       } else {
-        // Direct content
         subtitleContent = subtitleSource;
       }
       
       const parsedData = assParser.current.parse(subtitleContent);
       setSubtitleData(parsedData);
       
-      console.log('Subtitles loaded:', {
+      console.log('Subtitles loaded (parsed method):', {
         styles: Object.keys(parsedData.styles).length,
         events: parsedData.events.length
       });
@@ -122,13 +126,88 @@ export const VideoPlayer = ({
 
   const getVideoStyle = () => {
     const screenData = Dimensions.get('window');
-    const isWeb = Platform.OS === 'web';
     
     return {
       width: containerDimensions.width || screenData.width,
-      height: containerDimensions.height || (screenData.width * 9 / 16), // 16:9 aspect ratio
+      height: containerDimensions.height || (screenData.width * 9 / 16),
       backgroundColor: '#000000',
     };
+  };
+
+  // Render based on selected method
+  const renderVideoPlayer = () => {
+    switch (renderingMethod) {
+      case 'native':
+        return (
+          <NativeVideoPlayer
+            videoSource={videoSource}
+            subtitleSource={subtitleSource}
+            style={getVideoStyle()}
+            onLoad={handleVideoLoad}
+            onError={onError}
+          />
+        );
+        
+      case 'direct':
+        return (
+          <>
+            <Video
+              ref={videoRef}
+              source={videoSource}
+              style={getVideoStyle()}
+              useNativeControls={true}
+              resizeMode="contain"
+              isLooping={false}
+              onLoad={handleVideoLoad}
+              onPlaybackStatusUpdate={handleVideoStatusUpdate}
+              onError={onError}
+            />
+            
+            {/* Direct ASS Renderer Overlay */}
+            {subtitleSource && (
+              <DirectASSRenderer
+                subtitleSource={subtitleSource}
+                currentTime={videoStatus.positionMillis ? videoStatus.positionMillis / 1000 : 0}
+                videoWidth={videoDimensions.width}
+                videoHeight={videoDimensions.height}
+                containerWidth={containerDimensions.width}
+                containerHeight={containerDimensions.height}
+                style={StyleSheet.absoluteFillObject}
+              />
+            )}
+          </>
+        );
+        
+      case 'parsed':
+      default:
+        return (
+          <>
+            <Video
+              ref={videoRef}
+              source={videoSource}
+              style={getVideoStyle()}
+              useNativeControls={true}
+              resizeMode="contain"
+              isLooping={false}
+              onLoad={handleVideoLoad}
+              onPlaybackStatusUpdate={handleVideoStatusUpdate}
+              onError={onError}
+            />
+            
+            {/* Parsed Subtitle Overlay */}
+            {subtitleData && activeSubtitles.length > 0 && (
+              <SubtitleRenderer
+                subtitles={activeSubtitles}
+                styles={subtitleData.styles}
+                videoWidth={videoDimensions.width}
+                videoHeight={videoDimensions.height}
+                containerWidth={containerDimensions.width}
+                containerHeight={containerDimensions.height}
+              />
+            )}
+          </>
+        );
+    }
   };
 
   return (
@@ -136,29 +215,7 @@ export const VideoPlayer = ({
       style={[styles.container, style]}
       onLayout={handleContainerLayout}
     >
-      <Video
-        ref={videoRef}
-        source={videoSource}
-        style={getVideoStyle()}
-        useNativeControls={true}
-        resizeMode="contain"
-        isLooping={false}
-        onLoad={handleVideoLoad}
-        onPlaybackStatusUpdate={handleVideoStatusUpdate}
-        onError={onError}
-      />
-      
-      {/* Subtitle Overlay */}
-      {subtitleData && activeSubtitles.length > 0 && (
-        <SubtitleRenderer
-          subtitles={activeSubtitles}
-          styles={subtitleData.styles}
-          videoWidth={videoDimensions.width}
-          videoHeight={videoDimensions.height}
-          containerWidth={containerDimensions.width}
-          containerHeight={containerDimensions.height}
-        />
-      )}
+      {renderVideoPlayer()}
     </View>
   );
 };

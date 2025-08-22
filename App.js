@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Alert, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Alert, Platform, Dimensions, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { VideoPlayer } from './components/VideoPlayer';
 
 /**
  * Main App Component
- * Demonstrates the video player with .ass subtitle support
+ * Demonstrates different .ass subtitle rendering methods:
+ * 1. Direct WebView rendering (recommended)
+ * 2. Native video player with built-in subtitle support
+ * 3. Manual parsing (legacy fallback)
  */
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [renderingMethod, setRenderingMethod] = useState('direct');
 
-  // TODO: Replace with actual Google Drive video URL
-  // Get direct download link from Google Drive sharing
+  // Video and subtitle sources
   const videoSource = {
     uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-    // Replace with: 'https://drive.google.com/uc?export=download&id=YOUR_VIDEO_FILE_ID'
   };
   
-  // TODO: Replace with actual .ass subtitle file URL
-  // Get direct download link from Google Drive sharing
   const subtitleSource = 'https://raw.githubusercontent.com/1234-ad/react-native-ass-video-player/main/assets/sample-subtitles.ass';
-  // Replace with: 'https://drive.google.com/uc?export=download&id=YOUR_SUBTITLE_FILE_ID'
 
   const handleVideoLoad = (status) => {
     console.log('Video loaded:', status);
@@ -48,7 +47,7 @@ export default function App() {
     if (isWeb) {
       return {
         width: Math.min(width * 0.9, 800),
-        height: Math.min(width * 0.9, 800) * 9 / 16, // 16:9 aspect ratio
+        height: Math.min(width * 0.9, 800) * 9 / 16,
       };
     }
     
@@ -58,6 +57,12 @@ export default function App() {
     };
   };
 
+  const renderingMethods = [
+    { key: 'direct', label: 'Direct WebView', description: 'WebView with JS ASS renderer' },
+    { key: 'native', label: 'Native Player', description: 'Built-in subtitle support' },
+    { key: 'parsed', label: 'Manual Parsing', description: 'Legacy parsing method' }
+  ];
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -65,14 +70,42 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.title}>React Native ASS Video Player</Text>
         <Text style={styles.subtitle}>
-          Supports .ass subtitles with full styling and positioning
+          Direct .ass file rendering without manual parsing
         </Text>
+      </View>
+
+      {/* Rendering Method Selector */}
+      <View style={styles.methodSelector}>
+        <Text style={styles.methodTitle}>Rendering Method:</Text>
+        <View style={styles.methodButtons}>
+          {renderingMethods.map((method) => (
+            <TouchableOpacity
+              key={method.key}
+              style={[
+                styles.methodButton,
+                renderingMethod === method.key && styles.methodButtonActive
+              ]}
+              onPress={() => setRenderingMethod(method.key)}
+            >
+              <Text style={[
+                styles.methodButtonText,
+                renderingMethod === method.key && styles.methodButtonTextActive
+              ]}>
+                {method.label}
+              </Text>
+              <Text style={styles.methodButtonDesc}>
+                {method.description}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <View style={styles.videoContainer}>
         <VideoPlayer
           videoSource={videoSource}
           subtitleSource={subtitleSource}
+          renderingMethod={renderingMethod}
           style={[styles.videoPlayer, getResponsiveStyle()]}
           onLoad={handleVideoLoad}
           onError={handleVideoError}
@@ -92,23 +125,37 @@ export default function App() {
       </View>
 
       <View style={styles.features}>
-        <Text style={styles.featuresTitle}>Features Demonstrated:</Text>
-        <Text style={styles.featureItem}>✓ Full .ass subtitle format support</Text>
-        <Text style={styles.featureItem}>✓ Styling preservation (colors, fonts, effects)</Text>
-        <Text style={styles.featureItem}>✓ Precise timing and positioning</Text>
-        <Text style={styles.featureItem}>✓ Seek synchronization</Text>
-        <Text style={styles.featureItem}>✓ Cross-platform (Web, iOS, Android)</Text>
-        <Text style={styles.featureItem}>✓ Responsive design</Text>
-        <Text style={styles.featureItem}>✓ Override codes support</Text>
-        <Text style={styles.featureItem}>✓ Multiple subtitle layers</Text>
+        <Text style={styles.featuresTitle}>Direct Rendering Benefits:</Text>
+        <Text style={styles.featureItem}>✓ No manual .ass parsing required</Text>
+        <Text style={styles.featureItem}>✓ Future-proof against format changes</Text>
+        <Text style={styles.featureItem}>✓ Better performance and accuracy</Text>
+        <Text style={styles.featureItem}>✓ Native subtitle engine support</Text>
+        <Text style={styles.featureItem}>✓ Full .ass specification compliance</Text>
+        <Text style={styles.featureItem}>✓ Advanced effects and animations</Text>
+        <Text style={styles.featureItem}>✓ Reduced maintenance overhead</Text>
+      </View>
+
+      <View style={styles.methodInfo}>
+        <Text style={styles.methodInfoTitle}>Current Method: {renderingMethods.find(m => m.key === renderingMethod)?.label}</Text>
+        <Text style={styles.methodInfoDesc}>
+          {renderingMethod === 'direct' && 
+            'Uses WebView with JavaScript ASS renderer for accurate subtitle display without parsing.'
+          }
+          {renderingMethod === 'native' && 
+            'Leverages native video player capabilities for built-in .ass subtitle support.'
+          }
+          {renderingMethod === 'parsed' && 
+            'Legacy method that manually parses .ass files (may be unreliable with format changes).'
+          }
+        </Text>
       </View>
 
       <View style={styles.instructions}>
-        <Text style={styles.instructionsTitle}>Setup Instructions:</Text>
-        <Text style={styles.instructionItem}>1. Replace video URL with Google Drive link</Text>
-        <Text style={styles.instructionItem}>2. Replace subtitle URL with .ass file link</Text>
-        <Text style={styles.instructionItem}>3. Run: npm install && npm start</Text>
-        <Text style={styles.instructionItem}>4. Test on Web, iOS, and Android</Text>
+        <Text style={styles.instructionsTitle}>Implementation Notes:</Text>
+        <Text style={styles.instructionItem}>• Direct rendering eliminates parsing complexity</Text>
+        <Text style={styles.instructionItem}>• WebView method works across all platforms</Text>
+        <Text style={styles.instructionItem}>• Native method provides best performance</Text>
+        <Text style={styles.instructionItem}>• Fallback to parsing for compatibility</Text>
       </View>
     </View>
   );
@@ -139,6 +186,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#cccccc',
     textAlign: 'center',
+  },
+  methodSelector: {
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    width: '100%',
+    maxWidth: 600,
+  },
+  methodTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  methodButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+  },
+  methodButton: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    margin: 4,
+    minWidth: 120,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  methodButtonActive: {
+    backgroundColor: '#3a3a3a',
+    borderColor: '#ffaa00',
+  },
+  methodButtonText: {
+    color: '#cccccc',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  methodButtonTextActive: {
+    color: '#ffaa00',
+  },
+  methodButtonDesc: {
+    color: '#999999',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 4,
   },
   videoContainer: {
     position: 'relative',
@@ -187,19 +281,38 @@ const styles = StyleSheet.create({
   features: {
     paddingHorizontal: 20,
     maxWidth: 400,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   featuresTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   featureItem: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#cccccc',
-    marginBottom: 5,
+    marginBottom: 4,
     paddingLeft: 10,
+  },
+  methodInfo: {
+    paddingHorizontal: 20,
+    maxWidth: 400,
+    marginBottom: 15,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 15,
+  },
+  methodInfoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffaa00',
+    marginBottom: 8,
+  },
+  methodInfoDesc: {
+    fontSize: 12,
+    color: '#cccccc',
+    lineHeight: 16,
   },
   instructions: {
     paddingHorizontal: 20,
@@ -209,15 +322,15 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   instructionsTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#ffaa00',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   instructionItem: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#cccccc',
-    marginBottom: 5,
+    marginBottom: 4,
     paddingLeft: 5,
   },
 });
